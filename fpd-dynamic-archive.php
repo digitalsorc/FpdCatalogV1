@@ -1,14 +1,15 @@
 <?php
 /**
- * Plugin Name: FPD Dynamic Archive for Elementor
+ * Plugin Name: FPD Catalog V1
  * Description: Dynamic Elementor widget combining FPD Base Products and Designs into a filterable catalog.
- * Version: 1.0.0
+ * Version: 1.1.0
  * Author: Elite Developer
  * Text Domain: fpd-dynamic-archive
  */
 
 if ( ! defined( 'ABSPATH' ) ) exit;
 
+define( 'FPD_DYN_ARCHIVE_VERSION', '1.1.0' );
 define( 'FPD_DYN_ARCHIVE_URL', plugin_dir_url( __FILE__ ) );
 define( 'FPD_DYN_ARCHIVE_PATH', plugin_dir_path( __FILE__ ) );
 
@@ -27,8 +28,8 @@ class FPD_Dynamic_Archive_Plugin {
     }
 
     public function enqueue_scripts() {
-        wp_enqueue_style( 'fpd-dyn-archive-css', FPD_DYN_ARCHIVE_URL . 'assets/css/fpd-archive.css', [], '1.0.0' );
-        wp_enqueue_script( 'fpd-dyn-archive-js', FPD_DYN_ARCHIVE_URL . 'assets/js/fpd-renderer.js', [], '1.0.0', true );
+        wp_enqueue_style( 'fpd-dyn-archive-css', FPD_DYN_ARCHIVE_URL . 'assets/css/fpd-archive.css', [], FPD_DYN_ARCHIVE_VERSION );
+        wp_enqueue_script( 'fpd-dyn-archive-js', FPD_DYN_ARCHIVE_URL . 'assets/js/fpd-renderer.js', [], FPD_DYN_ARCHIVE_VERSION, true );
     }
 }
 

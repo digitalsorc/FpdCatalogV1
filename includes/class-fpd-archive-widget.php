@@ -87,14 +87,14 @@ class FPD_Archive_Widget extends Widget_Base {
         $elements = json_decode( $view->elements, true );
         $options = json_decode( $view->options, true );
         
-        $base_image = '';
+        $layers = [];
         $printing_box = null;
+        $box_z = 50; // Default z-index for design if no box found
 
         if ( is_array( $elements ) ) {
-            foreach ( $elements as $el ) {
-                if ( isset( $el['type'] ) && $el['type'] === 'image' && empty( $base_image ) ) {
-                    $base_image = $el['source'];
-                }
+            foreach ( $elements as $index => $el ) {
+                $z = isset($el['parameters']['z']) ? (int)$el['parameters']['z'] : $index;
+                
                 // Check if an element acts as a bounding box
                 if ( isset( $el['title'] ) && strtolower( $el['title'] ) === 'bounding box' ) {
                     $printing_box = [
@@ -102,6 +102,16 @@ class FPD_Archive_Widget extends Widget_Base {
                         'top' => isset($el['parameters']['top']) ? $el['parameters']['top'] : 0,
                         'width' => isset($el['parameters']['width']) ? $el['parameters']['width'] : 300,
                         'height' => isset($el['parameters']['height']) ? $el['parameters']['height'] : 400,
+                    ];
+                    $box_z = $z;
+                    continue; // Skip drawing the bounding box itself
+                }
+
+                if ( isset( $el['type'] ) && $el['type'] === 'image' ) {
+                    $layers[] = [
+                        'source' => $el['source'],
+                        'params' => isset($el['parameters']) ? $el['parameters'] : [],
+                        'z'      => $z
                     ];
                 }
             }
@@ -118,8 +128,9 @@ class FPD_Archive_Widget extends Widget_Base {
         }
 
         return [
-            'base_image' => $base_image,
+            'layers' => $layers,
             'box' => $printing_box,
+            'box_z' => $box_z,
             'stage_width' => isset($options['stageWidth']) ? $options['stageWidth'] : 800,
             'stage_height' => isset($options['stageHeight']) ? $options['stageHeight'] : 800,
         ];
@@ -177,20 +188,21 @@ class FPD_Archive_Widget extends Widget_Base {
             echo '<ul class="products fpd-dynamic-grid">';
             foreach ( $products as $fpd_prod ) {
                 $fpd_data = $this->get_fpd_view_data( $fpd_prod->ID );
-                if ( ! $fpd_data || empty( $fpd_data['base_image'] ) ) continue;
+                if ( ! $fpd_data || empty( $fpd_data['layers'] ) ) continue;
 
                 echo '<li class="product fpd-custom-product">';
                 echo '<div class="fpd-product-inner" style="text-align:center;">';
                 
                 printf(
                     '<canvas class="fpd-render-canvas" width="%d" height="%d" 
-                        data-base="%s" data-design="%s" 
-                        data-box-x="%d" data-box-y="%d" data-box-w="%d" data-box-h="%d">
+                        data-layers="%s" data-design="%s" 
+                        data-box-x="%d" data-box-y="%d" data-box-w="%d" data-box-h="%d" data-box-z="%d">
                     </canvas>',
                     esc_attr($fpd_data['stage_width']), esc_attr($fpd_data['stage_height']),
-                    esc_url($fpd_data['base_image']), esc_url($design_image),
+                    esc_attr(json_encode($fpd_data['layers'])), esc_url($design_image),
                     esc_attr($fpd_data['box']['left']), esc_attr($fpd_data['box']['top']),
-                    esc_attr($fpd_data['box']['width']), esc_attr($fpd_data['box']['height'])
+                    esc_attr($fpd_data['box']['width']), esc_attr($fpd_data['box']['height']),
+                    esc_attr($fpd_data['box_z'])
                 );
 
                 echo '<h2 class="woocommerce-loop-product__title" style="margin-top:15px;">' . esc_html( $fpd_prod->title ) . '</h2>';
@@ -253,16 +265,17 @@ class FPD_Archive_Widget extends Widget_Base {
                 echo '<li ' . wc_get_product_class( '', $product ) . '>';
                 echo '<a href="' . get_permalink() . '" class="woocommerce-LoopProduct-link woocommerce-loop-product__link">';
                 
-                if ( $fpd_data && ! empty( $fpd_data['base_image'] ) ) {
+                if ( $fpd_data && ! empty( $fpd_data['layers'] ) ) {
                     printf(
                         '<canvas class="fpd-render-canvas" width="%d" height="%d" 
-                            data-base="%s" data-design="%s" 
-                            data-box-x="%d" data-box-y="%d" data-box-w="%d" data-box-h="%d">
+                            data-layers="%s" data-design="%s" 
+                            data-box-x="%d" data-box-y="%d" data-box-w="%d" data-box-h="%d" data-box-z="%d">
                         </canvas>',
                         esc_attr($fpd_data['stage_width']), esc_attr($fpd_data['stage_height']),
-                        esc_url($fpd_data['base_image']), esc_url($design_image),
+                        esc_attr(json_encode($fpd_data['layers'])), esc_url($design_image),
                         esc_attr($fpd_data['box']['left']), esc_attr($fpd_data['box']['top']),
-                        esc_attr($fpd_data['box']['width']), esc_attr($fpd_data['box']['height'])
+                        esc_attr($fpd_data['box']['width']), esc_attr($fpd_data['box']['height']),
+                        esc_attr($fpd_data['box_z'])
                     );
                 } else {
                     echo $product->get_image( 'woocommerce_thumbnail' );
