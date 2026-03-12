@@ -11,6 +11,21 @@ class FPD_Archive_Widget extends Widget_Base {
     public function get_icon() { return 'eicon-products'; }
     public function get_categories() { return [ 'general' ]; }
 
+    private function get_fpd_products_options() {
+        global $wpdb;
+        $table = $wpdb->prefix . 'fpd_products';
+        $options = [];
+        
+        if ( $wpdb->get_var( "SHOW TABLES LIKE '$table'" ) == $table ) {
+            $results = $wpdb->get_results( "SELECT ID, title FROM $table ORDER BY title ASC" );
+            foreach ( $results as $row ) {
+                $options[ $row->ID ] = $row->title;
+            }
+        }
+        
+        return $options;
+    }
+
     protected function register_controls() {
         $this->start_controls_section( 'content_section', [
             'label' => __( 'Archive Settings', 'fpd-dynamic-archive' ),
@@ -42,13 +57,7 @@ class FPD_Archive_Widget extends Widget_Base {
         $this->add_control( 'fpd_base_product', [
             'label' => __( 'Global FPD Base Product', 'fpd-dynamic-archive' ),
             'type' => Controls_Manager::SELECT2,
-            'options' => [],
-            'select2options' => [
-                'ajax' => [
-                    'url' => admin_url( 'admin-ajax.php?action=fpd_get_base_products' ),
-                    'dataType' => 'json',
-                ],
-            ],
+            'options' => $this->get_fpd_products_options(),
             'condition' => [
                 'data_source' => 'woo_query',
                 'grid_mode' => 'dynamic_design',
@@ -107,7 +116,7 @@ class FPD_Archive_Widget extends Widget_Base {
                     continue; // Skip drawing the bounding box itself
                 }
 
-                if ( isset( $el['type'] ) && $el['type'] === 'image' ) {
+                if ( isset( $el['source'] ) && ! empty( $el['source'] ) ) {
                     $layers[] = [
                         'source' => $el['source'],
                         'params' => isset($el['parameters']) ? $el['parameters'] : [],
@@ -140,6 +149,14 @@ class FPD_Archive_Widget extends Widget_Base {
         $fpd_products = get_post_meta( $product_id, 'fpd_products', true );
         if ( empty( $fpd_products ) ) {
             $fpd_products = get_post_meta( $product_id, '_fpd_products', true );
+        }
+        
+        if ( empty( $fpd_products ) ) {
+            $settings = get_post_meta( $product_id, 'fpd_product_settings', true );
+            if ( is_string( $settings ) ) $settings = json_decode( $settings, true );
+            if ( isset( $settings['fpd_products'] ) ) {
+                $fpd_products = $settings['fpd_products'];
+            }
         }
         
         if ( is_string( $fpd_products ) ) {
@@ -188,7 +205,10 @@ class FPD_Archive_Widget extends Widget_Base {
             echo '<ul class="products fpd-dynamic-grid">';
             foreach ( $products as $fpd_prod ) {
                 $fpd_data = $this->get_fpd_view_data( $fpd_prod->ID );
-                if ( ! $fpd_data || empty( $fpd_data['layers'] ) ) continue;
+                if ( ! $fpd_data || empty( $fpd_data['layers'] ) ) {
+                    echo '<!-- No layers found for FPD Product ID ' . $fpd_prod->ID . ' -->';
+                    continue;
+                }
 
                 echo '<li class="product fpd-custom-product">';
                 echo '<div class="fpd-product-inner" style="text-align:center;">';

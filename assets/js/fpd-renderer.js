@@ -80,7 +80,7 @@ document.addEventListener('DOMContentLoaded', () => {
         let loadedImages = 0;
         renderQueue.forEach(item => {
             const img = new Image();
-            img.crossOrigin = "Anonymous";
+            // Removed crossOrigin to prevent strict CORS blocking on same-domain or CDN images
             img.src = item.src;
             img.onload = () => {
                 item.img = img;
@@ -88,7 +88,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (loadedImages === renderQueue.length) drawAll();
             };
             img.onerror = () => {
-                console.warn('Failed to load image:', item.src);
+                console.warn('FPD Renderer: Failed to load image layer:', item.src);
                 loadedImages++;
                 if (loadedImages === renderQueue.length) drawAll();
             };
