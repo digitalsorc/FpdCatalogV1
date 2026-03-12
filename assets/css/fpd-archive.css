@@ -1,0 +1,22 @@
+.fpd-dynamic-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 30px;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.fpd-render-canvas {
+    width: 100%;
+    height: auto;
+    display: block;
+    background: #f9f9f9;
+    border-radius: 8px;
+    transition: opacity 0.3s ease;
+}
+
+.fpd-render-canvas:not(.rendered) {
+    opacity: 0.5;
+    /* Optional: Add a loading spinner background here */
+}
